@@ -162,6 +162,15 @@
   }
   document.getElementById('calories').addEventListener('input', updateMacros);
 
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const calorieTarget = parseInt(params.get('cal'), 10);
+    if (!Number.isNaN(calorieTarget) && calorieTarget > 0) {
+      document.getElementById('calories').value = calorieTarget;
+      updateMacros();
+    }
+  });
+
   function generate() {
     const cal   = parseInt(document.getElementById('calories').value) || 2000;
     const count = parseInt(document.getElementById('mealCount').value);
