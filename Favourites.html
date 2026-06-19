@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Favourites</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.favs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.fav-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.15s, box-shadow 0.15s; animation: fadeUp 0.25s ease both; }
+.fav-card:hover { border-color: var(--green-mid); box-shadow: 0 2px 12px rgba(45,155,111,0.06); }
+.fav-top { display: flex; align-items: center; justify-content: space-between; }
+.fav-name { font-size: 15px; font-weight: 500; }
+.remove-btn { background: none; border: none; cursor: pointer; font-size: 18px; opacity: 0.35; transition: opacity 0.15s; line-height: 1; }
+.remove-btn:hover { opacity: 1; }
+.fav-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.fav-macros { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.macro-tag { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.mdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.mdot-carb{background:var(--blue)} .mdot-prot{background:var(--green)} .mdot-fat{background:var(--amber)}
+.fav-cal { font-size: 13px; font-weight: 600; color: var(--text-faint); }
+.ing-list { margin-top: 6px; border-top: 0.5px solid var(--border); padding-top: 8px; }
+.ing-list-title { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 600; margin-bottom: 5px; }
+.ing-pills { display: flex; flex-wrap: wrap; gap: 4px; }
+.ing-pill { background: #f5f4f0; border-radius: var(--radius-pill); font-size: 11px; padding: 2px 9px; color: var(--text-muted); }
+.empty-state { text-align: center; padding: 5rem 1rem; color: var(--text-faint); }
+.empty-state .ei { font-size: 48px; margin-bottom: 1rem; }
+.empty-state p { font-size: 14px; max-width: 280px; margin: 0 auto 1.5rem; line-height: 1.6; }
+.filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; }
+.filter-bar span { font-size: 12px; color: var(--text-faint); margin-right: 4px; }
+.summary-strip { display: flex; gap: 1.5rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 0.9rem 1.25rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.ss-item { font-size: 13px; color: var(--text-muted); }
+.ss-item strong { color: var(--text); }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>❤️ Favourites</h1>
+    <p>Meals you've saved from your plans. Click ♡ on any meal to save it.</p>
+  </div>
+  <button class="btn btn-outline" onclick="clearAll()" id="clear-btn" style="display:none">Clear all</button>
+</div>
+
+<div class="content-wrap">
+  <div id="filter-wrap"></div>
+  <div id="summary-wrap"></div>
+  <div id="favs-wrap">
+    <div class="empty-state">
+      <div class="ei">♡</div>
+      <p>No saved meals yet. Generate a plan and tap ♡ on any meal card to save it here.</p>
+      <a href="index.html" class="btn btn-primary">← Build a meal plan</a>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Your favourites are saved locally in your browser.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('favourites.html');
+  let activeFilter = 'All';
+
+  function removeFav(name) {
+    const favs = loadFavourites().filter(f => f.name !== name);
+    saveFavourites(favs);
+    renderFavs();
+  }
+
+  function clearAll() {
+    saveFavourites([]);
+    renderFavs();
+  }
+
+  function setFilter(filter, btn) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    renderFavs();
+  }
+
+  function renderFavs() {
+    const all = loadFavourites();
+    if (!all.length) {
+      document.getElementById('favs-wrap').innerHTML = `
+        <div class="empty-state">
+          <div class="ei">♡</div>
+          <p>No saved meals yet. Generate a plan and tap ♡ on any meal card.</p>
+          <a href="index.html" class="btn btn-primary">← Build a meal plan</a>
+        </div>`;
+      document.getElementById('filter-wrap').innerHTML = '';
+      document.getElementById('summary-wrap').innerHTML = '';
+      document.getElementById('clear-btn').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('clear-btn').style.display = 'inline-flex';
+
+    // Summary
+    const avgCal = Math.round(all.reduce((s,m) => s + m.calories, 0) / all.length);
+    const avgProt = Math.round(all.reduce((s,m) => s + m.protein, 0) / all.length);
+    document.getElementById('summary-wrap').innerHTML = `
+      <div class="summary-strip">
+        <div class="ss-item"><strong>${all.length}</strong> saved meals</div>
+        <div class="ss-item">Avg <strong>${avgCal}</strong> kcal per meal</div>
+        <div class="ss-item">Avg <strong>${avgProt}g</strong> protein</div>
+      </div>`;
+
+    // Filter bar — by meal type
+    const types = ['All', ...new Set(all.map(m => m.type).filter(Boolean))];
+    // (some saved meals might not have type; fallback to 'Meal')
+    document.getElementById('filter-wrap').innerHTML = `
+      <div class="filter-bar">
+        <span>Filter:</span>
+        ${types.map(t => `<button class="pill filter-pill ${t===activeFilter?'active':''}" onclick="setFilter('${t}', this)">${t}</button>`).join('')}
+      </div>`;
+
+    const filtered = activeFilter === 'All' ? all : all.filter(m => m.type === activeFilter);
+
+    if (!filtered.length) {
+      document.getElementById('favs-wrap').innerHTML = `<p style="color:var(--text-faint);font-size:14px">No saved meals for this filter.</p>`;
+      return;
+    }
+
+    const cards = filtered.map((m, i) => `
+      <div class="fav-card" style="animation-delay:${i*0.04}s">
+        <div class="fav-top">
+          <div class="fav-name">${m.name}</div>
+          <button class="remove-btn" onclick="removeFav('${m.name.replace(/'/g,"\\'")}')">×</button>
+        </div>
+        <div class="fav-desc">${m.desc}</div>
+        <div class="fav-macros">
+          <div class="macro-tag"><span class="mdot mdot-carb"></span>${m.carbs}g carbs</div>
+          <div class="macro-tag"><span class="mdot mdot-prot"></span>${m.protein}g protein</div>
+          <div class="macro-tag"><span class="mdot mdot-fat"></span>${m.fat}g fat</div>
+          <div class="fav-cal" style="margin-left:auto">${m.calories} kcal</div>
+        </div>
+        ${m.ingredients && m.ingredients.length ? `
+        <div class="ing-list">
+          <div class="ing-list-title">Ingredients</div>
+          <div class="ing-pills">${m.ingredients.map(i => `<span class="ing-pill">${i}</span>`).join('')}</div>
+        </div>` : ''}
+      </div>`).join('');
+
+    document.getElementById('favs-wrap').innerHTML = `<div class="favs-grid">${cards}</div>`;
+  }
+
+  window.addEventListener('DOMContentLoaded', renderFavs);
+</script>
+</body>
+</html>

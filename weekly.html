@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Weekly View</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.controls-bar { background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.controls-bar .pill-group { flex: 1; min-width: 240px; }
+.controls-bar .right { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-bottom: 2rem; }
+.day-col { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.day-head { background: #f5f4f0; padding: 10px 12px; border-bottom: 0.5px solid var(--border); }
+.day-name { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
+.day-cal  { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 1px; }
+.day-meals { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.week-meal-card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; cursor: default; transition: border-color 0.15s; }
+.week-meal-card:hover { border-color: var(--green-mid); }
+.wm-type { font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 600; }
+.wm-name { font-size: 12px; font-weight: 500; margin-top: 2px; line-height: 1.3; }
+.wm-cal  { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+.empty-state { text-align: center; padding: 5rem 1rem; color: var(--text-faint); }
+.empty-state .ei { font-size: 48px; margin-bottom: 1rem; }
+.empty-state p { font-size: 14px; max-width: 280px; margin: 0 auto 1.5rem; line-height: 1.6; }
+.week-summary { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; text-align: center; margin-bottom: 2rem; }
+.ws-val { font-size: 20px; font-weight: 600; }
+.ws-lbl { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.gen-week-btn { height: 42px; background: var(--green); color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0 20px; transition: background 0.15s; }
+.gen-week-btn:hover { background: var(--green-dark); }
+.cal-input-sm { width: 100px; height: 36px; }
+.select-sm { width: 110px; height: 36px; }
+@media(max-width:900px){
+  .week-grid { grid-template-columns: repeat(4,1fr); }
+}
+@media(max-width:580px){
+  .week-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>📅 Weekly View</h1>
+    <p>Generate a full 7-day meal plan at once.</p>
+  </div>
+</div>
+
+<div class="controls-bar">
+  <div class="pill-group" id="dietGroup">
+    <button class="pill active" data-diet="Balanced">Balanced</button>
+    <button class="pill" data-diet="Keto">Keto</button>
+    <button class="pill" data-diet="Mediterranean">Mediterranean</button>
+    <button class="pill" data-diet="Paleo">Paleo</button>
+    <button class="pill" data-diet="Vegan">Vegan</button>
+    <button class="pill" data-diet="Vegetarian">Vegetarian</button>
+  </div>
+  <div class="right">
+    <input type="number" id="calories" value="2000" min="1000" max="4000" step="50" class="cal-input-sm" title="Daily calories">
+    <select id="mealCount" class="select-sm">
+      <option value="3" selected>3 meals</option>
+      <option value="4">4 meals</option>
+    </select>
+    <button class="gen-week-btn" onclick="generateWeek()">▶ Generate week</button>
+  </div>
+</div>
+
+<div class="content-wrap">
+  <div id="week-summary-wrap"></div>
+  <div id="week-grid-wrap">
+    <div class="empty-state">
+      <div class="ei">📅</div>
+      <p>Click <strong>Generate week</strong> to build a full 7-day meal plan.</p>
+      <a href="index.html" class="btn btn-outline">← Back to daily planner</a>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Nutritional values are estimates.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('weekly.html');
+  let selectedDiet = 'Balanced';
+  const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  document.getElementById('dietGroup').addEventListener('click', e => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    document.querySelectorAll('#dietGroup .pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedDiet = pill.dataset.diet;
+  });
+
+  function generateWeek() {
+    const cal   = parseInt(document.getElementById('calories').value) || 2000;
+    const count = parseInt(document.getElementById('mealCount').value);
+    const week  = DAYS.map(day => ({
+      day,
+      meals: generatePlan(selectedDiet, cal, count)
+    }));
+    saveWeeklyPlan({ week, meta: { diet: selectedDiet, calories: cal, meals: count } });
+    renderWeek(week);
+  }
+
+  // Load saved week on page load
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = loadWeeklyPlan();
+    if (saved && saved.week) {
+      selectedDiet = saved.meta.diet || 'Balanced';
+      document.querySelectorAll('#dietGroup .pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.diet === selectedDiet);
+      });
+      document.getElementById('calories').value = saved.meta.calories || 2000;
+      document.getElementById('mealCount').value = saved.meta.meals || 3;
+      renderWeek(saved.week);
+    }
+  });
+
+  function renderWeek(week) {
+    // Summary
+    const totalCal = week.reduce((s, d) => s + d.meals.reduce((a, m) => a + m.calories, 0), 0);
+    const avgCal   = Math.round(totalCal / 7);
+    const totalP   = week.reduce((s, d) => s + d.meals.reduce((a, m) => a + m.protein, 0), 0);
+    const totalF   = week.reduce((s, d) => s + d.meals.reduce((a, m) => a + m.fat, 0), 0);
+    document.getElementById('week-summary-wrap').innerHTML = `
+      <div class="week-summary">
+        <div><div class="ws-val">${totalCal.toLocaleString()}</div><div class="ws-lbl">Weekly calories</div></div>
+        <div><div class="ws-val">${avgCal}</div><div class="ws-lbl">Avg / day</div></div>
+        <div><div class="ws-val" style="color:var(--green)">${Math.round(totalP/7)}g</div><div class="ws-lbl">Avg protein</div></div>
+        <div><div class="ws-val" style="color:var(--amber)">${Math.round(totalF/7)}g</div><div class="ws-lbl">Avg fat</div></div>
+      </div>`;
+
+    // Grid
+    const cols = week.map(({ day, meals }) => {
+      const dayCal = meals.reduce((s, m) => s + m.calories, 0);
+      const cards  = meals.map(m => `
+        <div class="week-meal-card">
+          <div class="wm-type">${m.type}</div>
+          <div class="wm-name">${m.name}</div>
+          <div class="wm-cal">${m.calories} kcal</div>
+        </div>`).join('');
+      return `
+        <div class="day-col" style="animation:fadeUp 0.3s ease both;animation-delay:${week.indexOf({ day, meals }) * 0.03}s">
+          <div class="day-head">
+            <div class="day-name">${day.slice(0,3)}</div>
+            <div class="day-cal">${dayCal} kcal</div>
+          </div>
+          <div class="day-meals">${cards}</div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('week-grid-wrap').innerHTML = `
+      <div class="week-grid">${cols}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="grocery.html" class="btn btn-primary">🛒 Build grocery list</a>
+        <a href="print.html" class="btn btn-outline">🖨 Print week</a>
+      </div>`;
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Meal Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.hero { text-align: center; padding: 3.5rem 1.5rem 2.5rem; max-width: 620px; margin: 0 auto; }
+.hero-eyebrow { display: inline-flex; align-items: center; gap: 6px; background: #E1F5EE; color: var(--green-dark); font-size: 12px; font-weight: 500; padding: 5px 14px; border-radius: var(--radius-pill); margin-bottom: 1.25rem; letter-spacing: 0.04em; }
+.hero h1 { font-family: 'DM Serif Display', serif; font-size: clamp(32px, 6vw, 48px); font-weight: 400; line-height: 1.1; margin-bottom: 1rem; }
+.hero h1 em { font-style: italic; color: var(--green); }
+.hero p { font-size: 16px; color: var(--text-muted); max-width: 420px; margin: 0 auto; line-height: 1.7; }
+.stats-bar { display: flex; justify-content: center; gap: 3rem; padding: 1.5rem 0 2rem; border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); margin-bottom: 2.5rem; }
+.stat { text-align: center; }
+.stat-num { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); }
+.stat-lbl { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.main { max-width: 1060px; margin: 0 auto; padding: 0 1.5rem 5rem; display: grid; grid-template-columns: 320px 1fr; gap: 2rem; align-items: start; }
+.panel { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.5rem; position: sticky; top: 68px; }
+.panel-title { font-size: 11px; font-weight: 600; color: var(--text-faint); margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; }
+.pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { padding: 5px 13px; border-radius: var(--radius-pill); border: 0.5px solid var(--border-md); font-size: 13px; cursor: pointer; background: transparent; color: var(--text-muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+.pill:hover { border-color: var(--green); color: var(--green); background: #E1F5EE; }
+.pill.active { background: #E1F5EE; border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.macro-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.macro-chip { background: #f5f4f0; border-radius: var(--radius-sm); padding: 8px 10px; text-align: center; }
+.macro-chip .mval { font-size: 16px; font-weight: 600; }
+.macro-chip .mlbl { font-size: 10px; color: var(--text-faint); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+.mc-carb .mval { color: var(--blue); }
+.mc-prot .mval { color: var(--green); }
+.mc-fat .mval { color: var(--amber); }
+.gen-btn { width: 100%; height: 46px; background: var(--green); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; margin-top: 0.25rem; }
+.gen-btn:hover { background: var(--green-dark); }
+.gen-btn:active { transform: scale(0.99); }
+.results { min-height: 300px; }
+.results-empty { background: var(--surface); border: 0.5px dashed var(--border-md); border-radius: var(--radius); padding: 4rem 2rem; text-align: center; color: var(--text-faint); }
+.results-empty .ei { font-size: 40px; margin-bottom: 1rem; }
+.results-empty p { font-size: 14px; max-width: 240px; margin: 0 auto; }
+.day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.day-title { font-family: 'DM Serif Display', serif; font-size: 22px; }
+.total-badge { background: #E1F5EE; color: var(--green-dark); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: var(--radius-pill); }
+.meal-list { display: flex; flex-direction: column; gap: 10px; }
+.meal-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items: start; transition: border-color 0.15s, box-shadow 0.15s; animation: fadeUp 0.3s ease both; }
+.meal-card:hover { border-color: var(--green-mid); box-shadow: 0 2px 12px rgba(45,155,111,0.07); }
+.meal-card:nth-child(1){animation-delay:.04s} .meal-card:nth-child(2){animation-delay:.08s} .meal-card:nth-child(3){animation-delay:.13s} .meal-card:nth-child(4){animation-delay:.18s} .meal-card:nth-child(5){animation-delay:.22s}
+.meal-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.meal-type-tag { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-faint); }
+.fav-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0; line-height: 1; opacity: 0.4; transition: opacity 0.15s, transform 0.15s; }
+.fav-btn:hover { opacity: 1; transform: scale(1.2); }
+.fav-btn.saved { opacity: 1; }
+.meal-name { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.meal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+.meal-macros { display: flex; gap: 10px; flex-wrap: wrap; }
+.macro-tag { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); }
+.mdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.mdot-carb{background:var(--blue)} .mdot-prot{background:var(--green)} .mdot-fat{background:var(--amber)}
+.meal-cal-col { text-align: right; padding-left: 0.75rem; }
+.meal-cal { font-size: 17px; font-weight: 600; }
+.meal-cal-lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; }
+.summary-bar { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1rem 1.5rem; display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-top: 1rem; text-align: center; }
+.sum-val { font-size: 18px; font-weight: 600; }
+.sum-lbl { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.action-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+@media(max-width:720px){
+  .main{grid-template-columns:1fr}
+  .panel{position:static}
+  .summary-bar{grid-template-columns:1fr 1fr}
+  .stats-bar{gap:1.5rem}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">✦ Free AI meal planner</div>
+  <h1>Eat well,<br><em>automatically</em></h1>
+  <p>Tell us your diet and calorie goal — we'll build a personalized meal plan you can actually cook.</p>
+</div>
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">500k+</div><div class="stat-lbl">Meals planned</div></div>
+  <div class="stat"><div class="stat-num">6</div><div class="stat-lbl">Diet types</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-lbl">Free to use</div></div>
+</div>
+
+<div class="main">
+  <div class="panel">
+    <div class="panel-title">Build your plan</div>
+    <div class="field">
+      <label class="field-label">Diet type</label>
+      <div class="pill-group" id="dietGroup">
+        <button class="pill active" data-diet="Balanced">Balanced</button>
+        <button class="pill" data-diet="Keto">Keto</button>
+        <button class="pill" data-diet="Mediterranean">Mediterranean</button>
+        <button class="pill" data-diet="Paleo">Paleo</button>
+        <button class="pill" data-diet="Vegan">Vegan</button>
+        <button class="pill" data-diet="Vegetarian">Vegetarian</button>
+      </div>
+    </div>
+    <div class="field input-row">
+      <div>
+        <label class="field-label">Daily calories</label>
+        <input type="number" id="calories" value="2000" min="1000" max="4000" step="50">
+      </div>
+      <div>
+        <label class="field-label">Meals / day</label>
+        <select id="mealCount">
+          <option value="2">2 meals</option>
+          <option value="3" selected>3 meals</option>
+          <option value="4">4 meals</option>
+          <option value="5">5 meals</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label">Est. macros</label>
+      <div class="macro-strip">
+        <div class="macro-chip mc-carb"><div class="mval" id="mCarbs">250g</div><div class="mlbl">Carbs</div></div>
+        <div class="macro-chip mc-prot"><div class="mval" id="mProt">125g</div><div class="mlbl">Protein</div></div>
+        <div class="macro-chip mc-fat"><div class="mval" id="mFat">56g</div><div class="mlbl">Fat</div></div>
+      </div>
+    </div>
+    <button class="gen-btn" onclick="generate()">▶ Generate meal plan</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="results-empty">
+      <div class="ei">🥗</div>
+      <p>Set your preferences and click <strong>Generate meal plan</strong> to get started.</p>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Nutritional values are estimates. Consult a registered dietitian for personalised advice.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('index.html');
+  let selectedDiet = 'Balanced';
+  let currentPlan = null;
+
+  document.getElementById('dietGroup').addEventListener('click', e => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    document.querySelectorAll('#dietGroup .pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedDiet = pill.dataset.diet;
+    updateMacros();
+  });
+
+  function updateMacros() {
+    const cal = parseInt(document.getElementById('calories').value) || 2000;
+    const { c, p, f } = macroPcts(selectedDiet);
+    document.getElementById('mCarbs').textContent = Math.round(cal * c / 4) + 'g';
+    document.getElementById('mProt').textContent  = Math.round(cal * p / 4) + 'g';
+    document.getElementById('mFat').textContent   = Math.round(cal * f / 9) + 'g';
+  }
+  document.getElementById('calories').addEventListener('input', updateMacros);
+
+  function generate() {
+    const cal   = parseInt(document.getElementById('calories').value) || 2000;
+    const count = parseInt(document.getElementById('mealCount').value);
+    currentPlan = generatePlan(selectedDiet, cal, count);
+    savePlan(currentPlan, { diet: selectedDiet, calories: cal, meals: count });
+    renderResults(currentPlan, cal);
+  }
+
+  function toggleFav(mealName, btn) {
+    const favs = loadFavourites();
+    const all  = MEAL_DB;
+    let found  = null;
+    for (const diet of Object.values(all)) {
+      for (const type of Object.values(diet)) {
+        const m = type.find(x => x.name === mealName);
+        if (m) { found = m; break; }
+      }
+      if (found) break;
+    }
+    if (!found) return;
+    const idx = favs.findIndex(f => f.name === mealName);
+    if (idx >= 0) {
+      favs.splice(idx, 1);
+      btn.textContent = '♡';
+      btn.classList.remove('saved');
+    } else {
+      favs.push(found);
+      btn.textContent = '♥';
+      btn.classList.add('saved');
+    }
+    saveFavourites(favs);
+  }
+
+  function renderResults(meals, cal) {
+    const favs = loadFavourites().map(f => f.name);
+    const tCal = meals.reduce((s,m) => s + m.calories, 0);
+    const tC   = meals.reduce((s,m) => s + m.carbs, 0);
+    const tP   = meals.reduce((s,m) => s + m.protein, 0);
+    const tF   = meals.reduce((s,m) => s + m.fat, 0);
+
+    const cards = meals.map(m => {
+      const isFav = favs.includes(m.name);
+      return `
+      <div class="meal-card">
+        <div>
+          <div class="meal-top-row">
+            <div class="meal-type-tag">${m.type}</div>
+            <button class="fav-btn ${isFav ? 'saved' : ''}" onclick="toggleFav('${m.name.replace(/'/g,"\\'")}', this)" title="Save to favourites">${isFav ? '♥' : '♡'}</button>
+          </div>
+          <div class="meal-name">${m.name}</div>
+          <div class="meal-desc">${m.desc}</div>
+          <div class="meal-macros">
+            <div class="macro-tag"><span class="mdot mdot-carb"></span>${m.carbs}g carbs</div>
+            <div class="macro-tag"><span class="mdot mdot-prot"></span>${m.protein}g protein</div>
+            <div class="macro-tag"><span class="mdot mdot-fat"></span>${m.fat}g fat</div>
+          </div>
+        </div>
+        <div class="meal-cal-col">
+          <div class="meal-cal">${m.calories}</div>
+          <div class="meal-cal-lbl">kcal</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('results').innerHTML = `
+      <div class="day-header">
+        <div class="day-title">Today's meal plan</div>
+        <div class="total-badge">${tCal} kcal total</div>
+      </div>
+      <div class="meal-list">${cards}</div>
+      <div class="summary-bar">
+        <div><div class="sum-val">${tCal}</div><div class="sum-lbl">Calories</div></div>
+        <div><div class="sum-val" style="color:var(--blue)">${tC}g</div><div class="sum-lbl">Carbs</div></div>
+        <div><div class="sum-val" style="color:var(--green)">${tP}g</div><div class="sum-lbl">Protein</div></div>
+        <div><div class="sum-val" style="color:var(--amber)">${tF}g</div><div class="sum-lbl">Fat</div></div>
+      </div>
+      <div class="action-row">
+        <a href="grocery.html" class="btn btn-primary">🛒 View grocery list</a>
+        <a href="weekly.html" class="btn btn-outline">📅 Weekly view</a>
+        <a href="print.html" class="btn btn-outline">🖨 Print plan</a>
+      </div>`;
+  }
+</script>
+</body>
+</html>

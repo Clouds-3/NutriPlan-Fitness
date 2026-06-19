@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Grocery List</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.grocery-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.category-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.cat-head { padding: 1rem 1.25rem; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.cat-icon { font-size: 20px; }
+.cat-name { font-size: 14px; font-weight: 600; }
+.cat-count { margin-left: auto; font-size: 12px; color: var(--text-faint); background: #f5f4f0; padding: 2px 10px; border-radius: var(--radius-pill); }
+.item-list { padding: 0.5rem 0; }
+.grocery-item { display: flex; align-items: center; gap: 10px; padding: 9px 1.25rem; cursor: pointer; transition: background 0.1s; border-bottom: 0.5px solid var(--border); }
+.grocery-item:last-child { border-bottom: none; }
+.grocery-item:hover { background: var(--bg); }
+.grocery-item.checked { opacity: 0.45; }
+.grocery-item.checked .gi-name { text-decoration: line-through; }
+.gi-check { width: 18px; height: 18px; border: 1.5px solid var(--border-md); border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.15s; }
+.grocery-item.checked .gi-check { background: var(--green); border-color: var(--green); color: white; }
+.gi-name { font-size: 14px; flex: 1; }
+.gi-qty  { font-size: 12px; color: var(--text-faint); white-space: nowrap; }
+.top-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.progress-wrap { flex: 1; min-width: 160px; }
+.progress-label { font-size: 12px; color: var(--text-faint); margin-bottom: 5px; }
+.progress-bar-bg { background: var(--border); border-radius: 100px; height: 6px; overflow: hidden; }
+.progress-bar-fill { background: var(--green); height: 100%; border-radius: 100px; transition: width 0.3s; }
+.empty-state { text-align: center; padding: 5rem 1rem; color: var(--text-faint); }
+.empty-state .ei { font-size: 48px; margin-bottom: 1rem; }
+.empty-state p { font-size: 14px; max-width: 280px; margin: 0 auto 1.5rem; line-height: 1.6; }
+@media(max-width:640px){ .grocery-wrap{ grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>🛒 Grocery List</h1>
+    <p>All ingredients for your current meal plan, sorted by category.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    <button class="btn btn-outline" onclick="clearChecked()">Clear checked</button>
+    <button class="btn btn-outline" onclick="window.print()">🖨 Print</button>
+  </div>
+</div>
+
+<div class="content-wrap">
+  <div id="top-bar-wrap"></div>
+  <div id="grocery-wrap">
+    <div class="empty-state">
+      <div class="ei">🛒</div>
+      <p>No meal plan found. Go generate a plan first and your grocery list will appear here.</p>
+      <a href="index.html" class="btn btn-primary">← Build a meal plan</a>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Always check for allergens on packaging.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('grocery.html');
+
+  const CATEGORIES = {
+    'Produce 🥦':   ['berries','banana','apple','mango','blueberries','strawberries','kiwi','figs','dates','avocado','tomato','tomatoes','cherry tomatoes','spinach','lettuce','romaine','arugula','cucumber','celery','carrot','carrots','bell pepper','zucchini','courgette','cauliflower','broccoli','asparagus','broccolini','green beans','fennel','red onion','onion','mushrooms','mixed mushrooms','lemon','lime','parsley','coriander','mint','dill','thyme','rosemary','basil','fresh herbs','ginger','garlic','sweet potato','parsnip','cabbage slaw','kiwi'],
+    'Protein 🥩':   ['chicken breast','chicken thighs','ground beef','beef','bison mince','lamb chops','ground lamb','lamb','bacon','salami','beef jerky','tuna','tuna steaks','salmon','smoked salmon','sea bass','sea bream','prawns','clams','eggs','tofu','firm tofu','jackfruit','paneer'],
+    'Dairy & Eggs 🥛': ['greek yoghurt','yoghurt','milk','cream','heavy cream','coconut milk','butter','ghee','cheese','cheddar','feta','mozzarella','parmesan','cream cheese','blue cheese','raita'],
+    'Pantry 🥫':    ['rolled oats','oats','granola','quinoa','brown rice','basmati rice','jasmine rice','arborio rice','couscous','lentils','red lentils','chickpeas','black beans','edamame','almond flour','pasta','linguine','sourdough','pitta','naan','flatbread','wrap','whole-wheat wrap','sub roll','burger bun','corn tortillas','peanut butter','almond butter','tahini','hummus','honey','maple syrup','olive oil','coconut oil','soy sauce','sesame oil','white wine','balsamic glaze','chipotle paste','tikka spice mix','biryani spice mix','turmeric','cumin','paprika','smoked paprika','garam masala','chaat masala','oregano','coriander powder','thyme dried','chilli flakes','black pepper','sea salt','salt','MCT oil','nutritional yeast'],
+    'Nuts & Seeds 🌰': ['almonds','cashews','walnuts','macadamia nuts','pumpkin seeds','chia seeds','mixed nuts','trail mix','desiccated coconut','coconut flakes','dark chocolate chips','raisins'],
+    'Other 🧴':     ['tzatziki','mint chutney','mustard','mayonnaise','capers','kalamata olives','stuffed vine leaves','tabbouleh','saffron','vine leaves','ice cubes','fried onion'],
+  };
+
+  let checkedItems = {};
+
+  function categorizeIngredients(ingredients) {
+    const cats = {};
+    Object.keys(CATEGORIES).forEach(c => cats[c] = []);
+    ingredients.forEach(ing => {
+      const ingLow = ing.toLowerCase();
+      let placed = false;
+      for (const [cat, keywords] of Object.entries(CATEGORIES)) {
+        if (keywords.some(kw => ingLow.includes(kw))) {
+          cats[cat].push(ing);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) cats['Other 🧴'].push(ing);
+    });
+    return cats;
+  }
+
+  function updateProgress(total, checked) {
+    const pct = total ? Math.round((checked / total) * 100) : 0;
+    const el = document.getElementById('prog-fill');
+    const lb = document.getElementById('prog-label');
+    if (el) el.style.width = pct + '%';
+    if (lb) lb.textContent = `${checked} of ${total} items checked (${pct}%)`;
+  }
+
+  function toggleItem(id, total) {
+    checkedItems[id] = !checkedItems[id];
+    const row = document.getElementById('gi-' + id);
+    if (row) row.classList.toggle('checked', checkedItems[id]);
+    const chk = document.getElementById('chk-' + id);
+    if (chk) chk.textContent = checkedItems[id] ? '✓' : '';
+    const checkedCount = Object.values(checkedItems).filter(Boolean).length;
+    updateProgress(total, checkedCount);
+  }
+
+  function clearChecked() {
+    Object.keys(checkedItems).forEach(k => checkedItems[k] = false);
+    document.querySelectorAll('.grocery-item').forEach(el => el.classList.remove('checked'));
+    document.querySelectorAll('.gi-check').forEach(el => el.textContent = '');
+    updateProgress(Object.keys(checkedItems).length, 0);
+  }
+
+  function buildList(meals) {
+    // Collect all ingredients
+    const allIngs = [];
+    meals.forEach(meal => {
+      (meal.ingredients || []).forEach(ing => allIngs.push(ing));
+    });
+    // Deduplicate by base name
+    const seen = new Set();
+    const deduped = allIngs.filter(ing => {
+      const base = ing.toLowerCase().replace(/\s*\d+.*$/, '').replace(/\s*(g|kg|ml|l|tbsp|tsp|cup|pinch|cloves?|bunch|slices?|rashers?|pieces?|sprigs?|stalks?|knob|large|fresh|frozen|whole|raw|dried|mixed|seasonal|natural|strained).*$/i, '').trim();
+      if (seen.has(base)) return false;
+      seen.add(base);
+      return true;
+    });
+
+    const cats  = categorizeIngredients(deduped);
+    const total = deduped.length;
+    deduped.forEach((_, i) => checkedItems[i] = false);
+
+    // Build top bar
+    document.getElementById('top-bar-wrap').innerHTML = `
+      <div class="top-bar">
+        <div class="progress-wrap">
+          <div class="progress-label" id="prog-label">0 of ${total} items checked (0%)</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+        </div>
+        <div style="font-size:13px;color:var(--text-faint)">${total} items · ${meals.length} meals</div>
+      </div>`;
+
+    // Build grid
+    let itemIdx = 0;
+    const catCards = Object.entries(cats)
+      .filter(([, items]) => items.length > 0)
+      .map(([cat, items]) => {
+        const rows = items.map(ing => {
+          const id = itemIdx++;
+          const parts = ing.match(/^(.*?)(?:\s+(\d+\w*(?:\s*\w+)?))?\s*$/);
+          const name  = parts ? parts[1] : ing;
+          const qty   = ing.replace(name, '').trim();
+          return `
+            <div class="grocery-item" id="gi-${id}" onclick="toggleItem(${id}, ${total})">
+              <div class="gi-check" id="chk-${id}"></div>
+              <div class="gi-name">${name}</div>
+              ${qty ? `<div class="gi-qty">${qty}</div>` : ''}
+            </div>`;
+        }).join('');
+        return `
+          <div class="category-card">
+            <div class="cat-head">
+              <div class="cat-name">${cat}</div>
+              <div class="cat-count">${items.length}</div>
+            </div>
+            <div class="item-list">${rows}</div>
+          </div>`;
+      }).join('');
+
+    document.getElementById('grocery-wrap').innerHTML = `<div class="grocery-wrap">${catCards}</div>`;
+  }
+
+  // Load from saved plan
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = loadPlan();
+    if (saved && saved.meals && saved.meals.length) {
+      buildList(saved.meals);
+    }
+  });
+</script>
+</body>
+</html>

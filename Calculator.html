@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Calorie Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.calc-layout { display: grid; grid-template-columns: 360px 1fr; gap: 2rem; align-items: start; }
+.calc-panel { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.75rem; }
+.calc-panel h2 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; margin-bottom: 1.5rem; }
+.radio-group { display: flex; gap: 8px; }
+.radio-pill { flex: 1; text-align: center; padding: 8px 10px; border: 0.5px solid var(--border-md); border-radius: var(--radius-pill); font-size: 13px; cursor: pointer; color: var(--text-muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif; background: transparent; }
+.radio-pill.active { background: #E1F5EE; border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+.activity-grid { display: flex; flex-direction: column; gap: 6px; }
+.activity-opt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 0.5px solid var(--border-md); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; }
+.activity-opt:hover { border-color: var(--green); background: #f5fdf9; }
+.activity-opt.active { border-color: var(--green); background: #E1F5EE; }
+.ao-radio { width: 16px; height: 16px; border: 1.5px solid var(--border-md); border-radius: 50%; margin-top: 2px; flex-shrink: 0; transition: all 0.15s; display: flex; align-items: center; justify-content: center; }
+.activity-opt.active .ao-radio { border-color: var(--green); background: var(--green); }
+.activity-opt.active .ao-radio::after { content: ''; width: 6px; height: 6px; background: white; border-radius: 50%; }
+.ao-label { font-size: 13px; font-weight: 500; }
+.ao-desc  { font-size: 12px; color: var(--text-faint); margin-top: 1px; }
+.calc-btn { width: 100%; height: 46px; background: var(--green); color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; margin-top: 0.5rem; }
+.calc-btn:hover { background: var(--green-dark); }
+.result-panel { display: flex; flex-direction: column; gap: 1rem; }
+.result-hero { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 2rem; text-align: center; }
+.result-hero .rh-label { font-size: 12px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+.result-hero .rh-cal { font-family: 'DM Serif Display', serif; font-size: 56px; color: var(--green); line-height: 1; }
+.result-hero .rh-unit { font-size: 18px; color: var(--text-muted); margin-top: 4px; }
+.result-hero .rh-sub  { font-size: 14px; color: var(--text-faint); margin-top: 8px; }
+.goal-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.goal-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; text-align: center; cursor: pointer; transition: all 0.15s; }
+.goal-card:hover { border-color: var(--green); background: #f5fdf9; }
+.goal-card.selected { border-color: var(--green); background: #E1F5EE; }
+.gc-icon  { font-size: 22px; margin-bottom: 6px; }
+.gc-label { font-size: 13px; font-weight: 500; }
+.gc-cal   { font-size: 18px; font-weight: 600; margin-top: 4px; }
+.gc-desc  { font-size: 11px; color: var(--text-faint); margin-top: 3px; line-height: 1.4; }
+.macro-result { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; text-align: center; }
+.mr-val { font-size: 22px; font-weight: 600; }
+.mr-lbl { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.mr-pct { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.use-btn { display: block; }
+@media(max-width:720px){ .calc-layout{ grid-template-columns:1fr } .goal-cards{ grid-template-columns:1fr 1fr } }
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>🔥 Calorie Calculator</h1>
+    <p>Find your daily calorie target using the Mifflin-St Jeor formula.</p>
+  </div>
+</div>
+
+<div class="content-wrap">
+  <div class="calc-layout">
+    <div class="calc-panel">
+      <h2>Your details</h2>
+
+      <div class="field">
+        <label class="field-label">Sex</label>
+        <div class="radio-group">
+          <button class="radio-pill active" data-sex="male" id="sexMale">Male</button>
+          <button class="radio-pill" data-sex="female" id="sexFemale">Female</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Age</label>
+        <input type="number" id="age" value="28" min="15" max="80">
+      </div>
+
+      <div class="field input-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label class="field-label">Height (cm)</label>
+          <input type="number" id="height" value="170" min="140" max="220">
+        </div>
+        <div>
+          <label class="field-label">Weight (kg)</label>
+          <input type="number" id="weight" value="70" min="40" max="200">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Activity level</label>
+        <div class="activity-grid" id="activityGrid">
+          <div class="activity-opt" data-mult="1.2" onclick="selectActivity(this)">
+            <div class="ao-radio"></div>
+            <div><div class="ao-label">Sedentary</div><div class="ao-desc">Desk job, little or no exercise</div></div>
+          </div>
+          <div class="activity-opt active" data-mult="1.375" onclick="selectActivity(this)">
+            <div class="ao-radio"></div>
+            <div><div class="ao-label">Lightly active</div><div class="ao-desc">Light exercise 1–3 days/week</div></div>
+          </div>
+          <div class="activity-opt" data-mult="1.55" onclick="selectActivity(this)">
+            <div class="ao-radio"></div>
+            <div><div class="ao-label">Moderately active</div><div class="ao-desc">Moderate exercise 3–5 days/week</div></div>
+          </div>
+          <div class="activity-opt" data-mult="1.725" onclick="selectActivity(this)">
+            <div class="ao-radio"></div>
+            <div><div class="ao-label">Very active</div><div class="ao-desc">Hard exercise 6–7 days/week</div></div>
+          </div>
+          <div class="activity-opt" data-mult="1.9" onclick="selectActivity(this)">
+            <div class="ao-radio"></div>
+            <div><div class="ao-label">Extra active</div><div class="ao-desc">Very hard exercise + physical job</div></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="calc-btn" onclick="calculate()">Calculate my calories</button>
+    </div>
+
+    <div class="result-panel" id="result-panel">
+      <div style="background:var(--surface);border:0.5px dashed var(--border-md);border-radius:var(--radius);padding:4rem 2rem;text-align:center;color:var(--text-faint)">
+        <div style="font-size:40px;margin-bottom:1rem">🔥</div>
+        <p style="font-size:14px;max-width:240px;margin:0 auto">Fill in your details and click <strong>Calculate</strong> to get your personalised calorie target.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Results are estimates. Consult a health professional for medical guidance.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('calculator.html');
+  let selectedSex  = 'male';
+  let activityMult = 1.375;
+  let selectedGoal = 'maintain';
+  let tdee = 0;
+
+  document.getElementById('sexMale').addEventListener('click', () => { selectedSex = 'male'; document.getElementById('sexMale').classList.add('active'); document.getElementById('sexFemale').classList.remove('active'); });
+  document.getElementById('sexFemale').addEventListener('click', () => { selectedSex = 'female'; document.getElementById('sexFemale').classList.add('active'); document.getElementById('sexMale').classList.remove('active'); });
+
+  function selectActivity(el) {
+    document.querySelectorAll('.activity-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    activityMult = parseFloat(el.dataset.mult);
+  }
+
+  function calculate() {
+    const age    = parseInt(document.getElementById('age').value);
+    const h      = parseInt(document.getElementById('height').value);
+    const w      = parseInt(document.getElementById('weight').value);
+    // Mifflin-St Jeor
+    const bmr = selectedSex === 'male'
+      ? 10 * w + 6.25 * h - 5 * age + 5
+      : 10 * w + 6.25 * h - 5 * age - 161;
+    tdee = Math.round(bmr * activityMult);
+    renderResult(tdee);
+  }
+
+  function selectGoal(goal, btn) {
+    selectedGoal = goal;
+    document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('selected'));
+    btn.classList.add('selected');
+    const goalCal = goalCalories(tdee, goal);
+    renderMacros(goalCal);
+    // update use button
+    const ub = document.getElementById('use-btn');
+    if (ub) ub.href = `index.html?cal=${goalCal}`;
+  }
+
+  function goalCalories(tdee, goal) {
+    return { lose: tdee - 500, maintain: tdee, gain: tdee + 300 }[goal] || tdee;
+  }
+
+  function renderMacros(cal) {
+    const { c, p, f } = macroPcts('Balanced');
+    const cg = Math.round(cal * c / 4);
+    const pg = Math.round(cal * p / 4);
+    const fg = Math.round(cal * f / 9);
+    document.getElementById('macro-row').innerHTML = `
+      <div class="macro-result">
+        <div><div class="mr-val" style="color:var(--blue)">${cg}g</div><div class="mr-lbl">Carbs</div><div class="mr-pct">${Math.round(c*100)}%</div></div>
+        <div><div class="mr-val" style="color:var(--green)">${pg}g</div><div class="mr-lbl">Protein</div><div class="mr-pct">${Math.round(p*100)}%</div></div>
+        <div><div class="mr-val" style="color:var(--amber)">${fg}g</div><div class="mr-lbl">Fat</div><div class="mr-pct">${Math.round(f*100)}%</div></div>
+      </div>`;
+  }
+
+  function renderResult(tdee) {
+    const goals = [
+      { key:'lose',     icon:'⬇️', label:'Lose weight',   cal: tdee-500, desc:'500 kcal deficit/day' },
+      { key:'maintain', icon:'⚖️', label:'Maintain weight', cal: tdee,   desc:'Match your energy output' },
+      { key:'gain',     icon:'⬆️', label:'Build muscle',  cal: tdee+300, desc:'300 kcal surplus/day' },
+    ];
+    const defaultCal = tdee;
+    document.getElementById('result-panel').innerHTML = `
+      <div class="result-hero">
+        <div class="rh-label">Your maintenance calories</div>
+        <div class="rh-cal">${tdee.toLocaleString()}</div>
+        <div class="rh-unit">kcal / day</div>
+        <div class="rh-sub">Based on Mifflin-St Jeor equation</div>
+      </div>
+      <div class="goal-cards">
+        ${goals.map(g => `
+          <div class="goal-card ${g.key==='maintain'?'selected':''}" onclick="selectGoal('${g.key}', this)">
+            <div class="gc-icon">${g.icon}</div>
+            <div class="gc-label">${g.label}</div>
+            <div class="gc-cal">${g.cal.toLocaleString()}</div>
+            <div class="gc-desc">${g.desc}</div>
+          </div>`).join('')}
+      </div>
+      <div id="macro-row"></div>
+      <a href="index.html?cal=${defaultCal}" id="use-btn" class="btn btn-primary use-btn">▶ Use this target in meal planner</a>`;
+    renderMacros(defaultCal);
+  }
+
+  // Auto-fill from URL param
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('cal')) {
+      document.getElementById('weight').value = 70;
+    }
+  });
+</script>
+</body>
+</html>

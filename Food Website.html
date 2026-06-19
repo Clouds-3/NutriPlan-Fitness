@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Automatic Meal Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1D9E75;
+    --green-dark: #0F6E56;
+    --green-light: #E1F5EE;
+    --green-mid: #9FE1CB;
+    --amber: #EF9F27;
+    --amber-light: #FAEEDA;
+    --blue: #378ADD;
+    --blue-light: #E6F1FB;
+    --bg: #F7F6F2;
+    --surface: #FFFFFF;
+    --border: rgba(0,0,0,0.09);
+    --border-md: rgba(0,0,0,0.14);
+    --text: #1a1a18;
+    --text-muted: #6b6b66;
+    --text-faint: #9a9a94;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-pill: 99px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; }
+
+  .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+  .nav-links a { font-size: 14px; color: var(--text-muted); text-decoration: none; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--green);
+    color: white !important;
+    padding: 7px 16px;
+    border-radius: var(--radius-pill);
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .nav-cta:hover { background: var(--green-dark) !important; }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 5rem 1.5rem 3.5rem;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    margin-bottom: 1.25rem;
+    letter-spacing: 0.04em;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(36px, 6vw, 52px);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--green);
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 440px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+  }
+
+  /* STATS ROW */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 1.5rem 0 2.5rem;
+    border-top: 0.5px solid var(--border);
+    border-bottom: 0.5px solid var(--border);
+    margin-bottom: 3rem;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .stat { text-align: center; }
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); }
+  .stat-lbl { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+
+  /* MAIN LAYOUT */
+  .main {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* PLANNER PANEL */
+  .panel {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    position: sticky;
+    top: 72px;
+  }
+
+  .panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.5px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .field { margin-bottom: 1.25rem; }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .pill {
+    padding: 5px 13px;
+    border-radius: var(--radius-pill);
+    border: 0.5px solid var(--border-md);
+    font-size: 13px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .pill:hover { border-color: var(--green); color: var(--green); background: var(--green-light); }
+  .pill.active { background: var(--green-light); border-color: var(--green); color: var(--green-dark); font-weight: 500; }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  input[type="number"], select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    appearance: none;
+  }
+
+  input[type="number"]:focus, select:focus {
+    outline: none;
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px var(--green-light);
+  }
+
+  .macro-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 1.25rem;
+  }
+
+  .macro-chip {
+    background: #f5f4f0;
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    text-align: center;
+  }
+
+  .macro-chip .mval { font-size: 16px; font-weight: 600; }
+  .macro-chip .mlbl { font-size: 10px; color: var(--text-faint); margin-top: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .macro-chip.mc-carb .mval { color: var(--blue); }
+  .macro-chip.mc-prot .mval { color: var(--green); }
+  .macro-chip.mc-fat .mval { color: var(--amber); }
+
+  .gen-btn {
+    width: 100%;
+    height: 46px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .gen-btn:hover { background: var(--green-dark); }
+  .gen-btn:active { transform: scale(0.99); }
+
+  /* RESULTS PANEL */
+  .results { min-height: 300px; }
+
+  .results-empty {
+    background: var(--surface);
+    border: 0.5px dashed var(--border-md);
+    border-radius: var(--radius);
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--text-faint);
+  }
+
+  .results-empty .empty-icon { font-size: 40px; margin-bottom: 1rem; }
+  .results-empty p { font-size: 14px; line-height: 1.6; max-width: 260px; margin: 0 auto; }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .day-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text);
+  }
+
+  .total-badge {
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+  }
+
+  .meal-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .meal-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: start;
+    transition: border-color 0.15s;
+    animation: slideIn 0.3s ease both;
+  }
+
+  .meal-card:hover { border-color: var(--green-mid); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .meal-card:nth-child(1) { animation-delay: 0.05s; }
+  .meal-card:nth-child(2) { animation-delay: 0.1s; }
+  .meal-card:nth-child(3) { animation-delay: 0.15s; }
+  .meal-card:nth-child(4) { animation-delay: 0.2s; }
+  .meal-card:nth-child(5) { animation-delay: 0.25s; }
+  .meal-card:nth-child(6) { animation-delay: 0.3s; }
+
+  .meal-type-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+
+  .meal-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .meal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+
+  .meal-macros { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .macro-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .mdot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mdot-carb { background: var(--blue); }
+  .mdot-prot { background: var(--green); }
+  .mdot-fat { background: var(--amber); }
+
+  .meal-cal-col { text-align: right; }
+  .meal-cal { font-size: 17px; font-weight: 600; color: var(--text); }
+  .meal-cal-lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* SUMMARY BAR */
+  .summary-bar {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  .sum-val { font-size: 18px; font-weight: 600; color: var(--text); }
+  .sum-lbl { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 2rem;
+    font-size: 13px;
+    color: var(--text-faint);
+    border-top: 0.5px solid var(--border);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 720px) {
+    .main { grid-template-columns: 1fr; }
+    .panel { position: static; }
+    .stats { gap: 1.5rem; }
+    .summary-bar { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">
+    <span class="logo-dot"></span>
+    NutriPlan
+  </a>
+  <div class="nav-links">
+    <a href="#">How it works</a>
+    <a href="#">Recipes</a>
+    <a href="#" class="nav-cta">Get Pro</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-eyebrow">✦ Free meal planner</div>
+  <h1>Eat well,<br><em>automatically</em></h1>
+  <p>Tell us your diet and calorie goal. We'll build a personalized meal plan you can actually cook.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">500k+</div><div class="stat-lbl">Meals planned</div></div>
+  <div class="stat"><div class="stat-num">12</div><div class="stat-lbl">Diet types</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-lbl">Free to use</div></div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: PLANNER CONTROLS -->
+  <div class="panel">
+    <div class="panel-title">Build your plan</div>
+
+    <div class="field">
+      <div class="field-label">Diet type</div>
+      <div class="pill-group" id="dietGroup">
+        <button class="pill active" data-diet="Balanced">Balanced</button>
+        <button class="pill" data-diet="Keto">Keto</button>
+        <button class="pill" data-diet="Mediterranean">Mediterranean</button>
+        <button class="pill" data-diet="Paleo">Paleo</button>
+        <button class="pill" data-diet="Vegan">Vegan</button>
+        <button class="pill" data-diet="Vegetarian">Vegetarian</button>
+      </div>
+    </div>
+
+    <div class="field input-row">
+      <div>
+        <div class="field-label">Daily calories</div>
+        <input type="number" id="calories" value="2000" min="1000" max="4000" step="50">
+      </div>
+      <div>
+        <div class="field-label">Meals / day</div>
+        <select id="mealCount">
+          <option value="2">2 meals</option>
+          <option value="3" selected>3 meals</option>
+          <option value="4">4 meals</option>
+          <option value="5">5 meals</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Est. macros</div>
+      <div class="macro-strip">
+        <div class="macro-chip mc-carb"><div class="mval" id="mCarbs">250g</div><div class="mlbl">Carbs</div></div>
+        <div class="macro-chip mc-prot"><div class="mval" id="mProt">150g</div><div class="mlbl">Protein</div></div>
+        <div class="macro-chip mc-fat"><div class="mval" id="mFat">67g</div><div class="mlbl">Fat</div></div>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      &#9654; Generate meal plan
+    </button>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div class="results" id="results">
+    <div class="results-empty">
+      <div class="empty-icon">🥗</div>
+      <p>Set your preferences and click <strong>Generate meal plan</strong> to get started.</p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  © 2026 NutriPlan &nbsp;·&nbsp; Nutritional values are estimates. Consult a dietitian for medical advice.
+</footer>
+
+<script>
+  // ── STATE ──
+  let selectedDiet = 'Balanced';
+
+  // ── MEAL DATA ──
+  const mealDB = {
+    Balanced: {
+      Breakfast: [
+        { name: 'Oats with banana & honey', desc: 'Rolled oats cooked in milk, topped with sliced banana, a drizzle of honey, and a sprinkle of chia seeds.', calories: 380, carbs: 65, protein: 12, fat: 8 },
+        { name: 'Scrambled eggs on whole-grain toast', desc: 'Three eggs scrambled with butter, served on two slices of whole-grain toast with sliced avocado.', calories: 420, carbs: 32, protein: 24, fat: 22 },
+      ],
+      'Morning snack': [
+        { name: 'Greek yogurt with mixed berries', desc: 'Full-fat Greek yogurt topped with fresh strawberries, blueberries, and a handful of walnuts.', calories: 210, carbs: 20, protein: 14, fat: 8 },
+        { name: 'Apple with almond butter', desc: 'One medium apple, sliced, served with two tablespoons of natural almond butter.', calories: 190, carbs: 26, protein: 5, fat: 9 },
+      ],
+      Lunch: [
+        { name: 'Grilled chicken & quinoa bowl', desc: 'Grilled chicken breast over fluffy quinoa with roasted red peppers, cucumber, cherry tomatoes, and lemon-herb dressing.', calories: 520, carbs: 48, protein: 45, fat: 12 },
+        { name: 'Tuna salad wrap', desc: 'Whole-wheat wrap filled with tuna, celery, red onion, light mayo, and mixed greens.', calories: 480, carbs: 40, protein: 38, fat: 14 },
+      ],
+      'Afternoon snack': [
+        { name: 'Hummus with veggie sticks', desc: 'Three tablespoons of hummus served with carrot sticks, cucumber slices, and bell pepper strips.', calories: 160, carbs: 18, protein: 6, fat: 7 },
+        { name: 'Cottage cheese & pineapple', desc: 'Half cup low-fat cottage cheese with fresh pineapple chunks and a pinch of cinnamon.', calories: 175, carbs: 22, protein: 14, fat: 3 },
+      ],
+      Dinner: [
+        { name: 'Salmon with sweet potato & broccoli', desc: 'Baked salmon fillet seasoned with garlic and dill, served with roasted sweet potato wedges and steamed broccoli.', calories: 590, carbs: 45, protein: 48, fat: 18 },
+        { name: 'Beef stir-fry with brown rice', desc: 'Lean beef strips wok-fried with snap peas, bell peppers, and soy-ginger sauce, served over brown rice.', calories: 610, carbs: 62, protein: 42, fat: 16 },
+      ],
+    },
+    Keto: {
+      Breakfast: [
+        { name: 'Bacon & avocado egg cups', desc: 'Eggs baked inside avocado halves, wrapped with crispy bacon strips, seasoned with salt, pepper, and chilli flakes.', calories: 420, carbs: 6, protein: 22, fat: 36 },
+        { name: 'Cream cheese omelette', desc: 'Three-egg omelette filled with cream cheese, spinach, and smoked salmon.', calories: 380, carbs: 3, protein: 26, fat: 30 },
+      ],
+      'Morning snack': [
+        { name: 'Macadamia nuts & cheddar', desc: 'A small handful of macadamia nuts paired with two slices of aged cheddar cheese.', calories: 240, carbs: 3, protein: 8, fat: 22 },
+        { name: 'Pork rinds with guacamole', desc: 'Light and crispy pork rinds served with fresh guacamole made with avocado, lime, and cilantro.', calories: 210, carbs: 2, protein: 10, fat: 18 },
+      ],
+      Lunch: [
+        { name: 'Lettuce-wrap BLT burger', desc: 'Grass-fed beef patty with bacon, tomato, and mayo, wrapped in crisp butter lettuce leaves instead of a bun.', calories: 540, carbs: 5, protein: 38, fat: 42 },
+        { name: 'Cauliflower chicken soup', desc: 'Creamy soup made with chicken thighs, cauliflower, heavy cream, garlic, and fresh thyme.', calories: 480, carbs: 8, protein: 35, fat: 35 },
+      ],
+      'Afternoon snack': [
+        { name: 'Celery with cream cheese', desc: 'Fresh celery stalks filled with herbed cream cheese and topped with everything bagel seasoning.', calories: 150, carbs: 3, protein: 4, fat: 14 },
+      ],
+      Dinner: [
+        { name: 'Ribeye steak with asparagus', desc: 'Pan-seared ribeye cooked in butter and rosemary, served alongside roasted asparagus spears and a lemon butter sauce.', calories: 680, carbs: 6, protein: 52, fat: 50 },
+        { name: 'Garlic butter shrimp zoodles', desc: 'Jumbo shrimp sautéed in garlic butter over spiralized zucchini noodles, finished with parmesan and fresh parsley.', calories: 420, carbs: 8, protein: 40, fat: 26 },
+      ],
+    },
+    Mediterranean: {
+      Breakfast: [
+        { name: 'Shakshuka with feta', desc: 'Eggs poached in a spiced tomato and pepper sauce, finished with crumbled feta and fresh herbs, served with crusty bread.', calories: 400, carbs: 35, protein: 20, fat: 20 },
+        { name: 'Labneh toast with za\'atar', desc: 'Thick strained yogurt spread on sourdough toast, drizzled with olive oil, dusted with za\'atar, and topped with cucumber.', calories: 340, carbs: 38, protein: 15, fat: 14 },
+      ],
+      Lunch: [
+        { name: 'Greek salad with grilled halloumi', desc: 'Tomatoes, cucumber, Kalamata olives, red onion, and grilled halloumi with a generous pour of extra-virgin olive oil and oregano.', calories: 480, carbs: 18, protein: 22, fat: 38 },
+        { name: 'Chicken shawarma bowl', desc: 'Spiced chicken thighs over herbed rice with tabbouleh, hummus, pickled turnips, and garlic sauce.', calories: 560, carbs: 52, protein: 40, fat: 20 },
+      ],
+      Dinner: [
+        { name: 'Lemon herb sea bass', desc: 'Pan-roasted sea bass with a caper-lemon sauce, served over warm white bean ragout with wilted spinach.', calories: 520, carbs: 28, protein: 48, fat: 22 },
+        { name: 'Lamb kofta with couscous', desc: 'Grilled lamb kofta skewers with a mint-yogurt dip, served alongside fluffy couscous and a roasted red pepper salad.', calories: 600, carbs: 45, protein: 42, fat: 26 },
+      ],
+    },
+    Paleo: {
+      Breakfast: [
+        { name: 'Sweet potato hash with eggs', desc: 'Diced sweet potato pan-fried with bell peppers, onions, and turkey sausage, topped with two fried eggs.', calories: 430, carbs: 38, protein: 28, fat: 18 },
+      ],
+      Lunch: [
+        { name: 'Grilled chicken & mango salad', desc: 'Sliced grilled chicken breast over mixed greens with fresh mango, red onion, toasted coconut, and a lime-avocado dressing.', calories: 490, carbs: 32, protein: 40, fat: 20 },
+      ],
+      Dinner: [
+        { name: 'Bison burger with roasted veg', desc: 'Bison patty seasoned with garlic and herbs, served with roasted Brussels sprouts, carrots, and a herb aioli.', calories: 580, carbs: 24, protein: 48, fat: 32 },
+      ],
+    },
+    Vegan: {
+      Breakfast: [
+        { name: 'Smoothie bowl', desc: 'Blended acai, frozen banana, and mixed berries, topped with granola, hemp seeds, sliced kiwi, and almond butter.', calories: 420, carbs: 70, protein: 10, fat: 12 },
+        { name: 'Tofu scramble & toast', desc: 'Crumbled silken tofu cooked with turmeric, nutritional yeast, spinach, and tomatoes, served on multigrain toast.', calories: 380, carbs: 36, protein: 22, fat: 14 },
+      ],
+      Lunch: [
+        { name: 'Lentil & roasted veggie wrap', desc: 'Spiced red lentils with roasted courgette, aubergine, and harissa, rolled in a whole-wheat wrap with cashew cream.', calories: 520, carbs: 72, protein: 22, fat: 14 },
+        { name: 'Buddha bowl', desc: 'Falafel over brown rice with roasted chickpeas, shredded red cabbage, cucumber, and tahini drizzle.', calories: 560, carbs: 80, protein: 18, fat: 18 },
+      ],
+      'Afternoon snack': [
+        { name: 'Edamame with sea salt', desc: 'Steamed edamame pods, generously salted with flaky sea salt and a squeeze of lemon.', calories: 180, carbs: 14, protein: 14, fat: 6 },
+      ],
+      Dinner: [
+        { name: 'Mushroom & black bean tacos', desc: 'Sautéed portobello mushrooms and spiced black beans in corn tortillas with pico de gallo, avocado, and lime crema.', calories: 540, carbs: 72, protein: 18, fat: 20 },
+        { name: 'Thai green curry with tofu', desc: 'Extra-firm tofu and mixed vegetables simmered in coconut milk green curry, served over jasmine rice with fresh basil.', calories: 580, carbs: 68, protein: 20, fat: 24 },
+      ],
+    },
+    Vegetarian: {
+      Breakfast: [
+        { name: 'Bircher muesli', desc: 'Rolled oats soaked overnight in apple juice and milk, mixed with grated apple, toasted almonds, and cinnamon.', calories: 390, carbs: 62, protein: 12, fat: 10 },
+        { name: 'Poached eggs & avocado toast', desc: 'Two poached eggs on sourdough toast with smashed avocado, cherry tomatoes, chilli flakes, and microgreens.', calories: 420, carbs: 34, protein: 20, fat: 22 },
+      ],
+      Lunch: [
+        { name: 'Caprese & pesto panini', desc: 'Pressed ciabatta filled with fresh mozzarella, tomato, basil pesto, and sun-dried tomatoes.', calories: 500, carbs: 46, protein: 22, fat: 26 },
+        { name: 'Roasted tomato soup with crusty bread', desc: 'Slow-roasted tomatoes blended into a silky soup with basil and cream, served with a thick slice of sourdough.', calories: 360, carbs: 48, protein: 10, fat: 14 },
+      ],
+      Dinner: [
+        { name: 'Mushroom risotto', desc: 'Arborio rice slow-cooked with a mix of wild mushrooms, white wine, shallots, and finished with parmesan and fresh thyme.', calories: 580, carbs: 72, protein: 18, fat: 20 },
+        { name: 'Paneer tikka masala', desc: 'Marinated paneer cubes in a rich tomato-cream sauce spiced with garam masala, served with basmati rice and warm naan.', calories: 620, carbs: 64, protein: 26, fat: 28 },
+      ],
+    },
+  };
+
+  const mealSlots = {
+    2: ['Lunch', 'Dinner'],
+    3: ['Breakfast', 'Lunch', 'Dinner'],
+    4: ['Breakfast', 'Lunch', 'Afternoon snack', 'Dinner'],
+    5: ['Breakfast', 'Morning snack', 'Lunch', 'Afternoon snack', 'Dinner'],
+  };
+
+  // ── DIET SELECT ──
+  document.getElementById('dietGroup').addEventListener('click', e => {
+    const pill = e.target.closest('.pill');
+    if (!pill) return;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    selectedDiet = pill.dataset.diet;
+    updateMacros();
+  });
+
+  // ── MACRO CALC ──
+  function updateMacros() {
+    const cal = parseInt(document.getElementById('calories').value) || 2000;
+    const d = selectedDiet;
+    let c = 0.5, p = 0.25, f = 0.25;
+    if (d === 'Keto') { c = 0.05; p = 0.25; f = 0.70; }
+    else if (d === 'Mediterranean') { c = 0.45; p = 0.20; f = 0.35; }
+    else if (d === 'Paleo') { c = 0.30; p = 0.35; f = 0.35; }
+    else if (d === 'Vegan') { c = 0.60; p = 0.15; f = 0.25; }
+    else if (d === 'Vegetarian') { c = 0.55; p = 0.18; f = 0.27; }
+    document.getElementById('mCarbs').textContent = Math.round(cal * c / 4) + 'g';
+    document.getElementById('mProt').textContent  = Math.round(cal * p / 4) + 'g';
+    document.getElementById('mFat').textContent   = Math.round(cal * f / 9) + 'g';
+  }
+
+  document.getElementById('calories').addEventListener('input', updateMacros);
+
+  // ── GENERATE ──
+  function generate() {
+    const cal = parseInt(document.getElementById('calories').value) || 2000;
+    const count = parseInt(document.getElementById('mealCount').value);
+    const slots = mealSlots[count];
+    const dietData = mealDB[selectedDiet] || mealDB['Balanced'];
+
+    // Fallback slots if diet doesn't have all slots
+    const fallback = mealDB['Balanced'];
+
+    const perMeal = Math.round(cal / slots.length);
+
+    const meals = slots.map(slot => {
+      const pool = (dietData[slot] && dietData[slot].length) ? dietData[slot] : (fallback[slot] || fallback['Lunch']);
+      const base = pool[Math.floor(Math.random() * pool.length)];
+      // Scale calories proportionally
+      const scale = perMeal / base.calories;
+      return {
+        type: slot,
+        name: base.name,
+        desc: base.desc,
+        calories: Math.round(base.calories * scale),
+        carbs: Math.round(base.carbs * scale),
+        protein: Math.round(base.protein * scale),
+        fat: Math.round(base.fat * scale),
+      };
+    });
+
+    renderResults(meals, cal);
+  }
+
+  function renderResults(meals, totalGoal) {
+    const totalCal  = meals.reduce((s, m) => s + m.calories, 0);
+    const totalCarb = meals.reduce((s, m) => s + m.carbs, 0);
+    const totalProt = meals.reduce((s, m) => s + m.protein, 0);
+    const totalFat  = meals.reduce((s, m) => s + m.fat, 0);
+
+    const mealsHtml = meals.map(m => `
+      <div class="meal-card">
+        <div>
+          <div class="meal-type-tag">${m.type}</div>
+          <div class="meal-name">${m.name}</div>
+          <div class="meal-desc">${m.desc}</div>
+          <div class="meal-macros">
+            <div class="macro-tag"><span class="mdot mdot-carb"></span>${m.carbs}g carbs</div>
+            <div class="macro-tag"><span class="mdot mdot-prot"></span>${m.protein}g protein</div>
+            <div class="macro-tag"><span class="mdot mdot-fat"></span>${m.fat}g fat</div>
+          </div>
+        </div>
+        <div class="meal-cal-col">
+          <div class="meal-cal">${m.calories}</div>
+          <div class="meal-cal-lbl">kcal</div>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('results').innerHTML = `
+      <div class="day-header">
+        <div class="day-title">Today's meal plan</div>
+        <div class="total-badge">${totalCal} kcal total</div>
+      </div>
+      <div class="meal-list">${mealsHtml}</div>
+      <div class="summary-bar">
+        <div><div class="sum-val">${totalCal}</div><div class="sum-lbl">Calories</div></div>
+        <div><div class="sum-val" style="color: var(--blue)">${totalCarb}g</div><div class="sum-lbl">Carbs</div></div>
+        <div><div class="sum-val" style="color: var(--green)">${totalProt}g</div><div class="sum-lbl">Protein</div></div>
+        <div><div class="sum-val" style="color: var(--amber)">${totalFat}g</div><div class="sum-lbl">Fat</div></div>
+      </div>
+    `;
+  }
+</script>
+
+</body>
+</html>

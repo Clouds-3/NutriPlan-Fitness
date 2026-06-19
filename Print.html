@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriPlan — Print Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+.print-preview { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 2.5rem; max-width: 700px; }
+.print-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--text); padding-bottom: 1rem; margin-bottom: 1.5rem; }
+.print-logo { font-family: 'DM Serif Display', serif; font-size: 22px; display: flex; align-items: center; gap: 6px; }
+.print-date { font-size: 13px; color: var(--text-faint); }
+.print-title { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 0.25rem; }
+.print-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+.print-summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; background: #f5f4f0; border-radius: var(--radius-sm); padding: 1rem 1.25rem; margin-bottom: 1.5rem; text-align: center; }
+.ps-val { font-size: 18px; font-weight: 600; }
+.ps-lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+.print-meal { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0; border-bottom: 0.5px solid var(--border); }
+.print-meal:last-child { border-bottom: none; }
+.pm-num { width: 28px; height: 28px; background: var(--green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+.pm-body { flex: 1; }
+.pm-type { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 600; }
+.pm-name { font-size: 15px; font-weight: 500; margin: 3px 0; }
+.pm-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 6px; }
+.pm-macros { display: flex; gap: 14px; }
+.pm-macro { font-size: 12px; color: var(--text-muted); }
+.pm-macro span { font-weight: 600; color: var(--text); }
+.pm-cal-col { text-align: right; flex-shrink: 0; }
+.pm-cal { font-size: 16px; font-weight: 600; }
+.pm-cal-lbl { font-size: 10px; color: var(--text-faint); text-transform: uppercase; }
+.print-footer-note { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 0.5px solid var(--border); }
+.action-row { display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.empty-state { text-align: center; padding: 5rem 1rem; color: var(--text-faint); }
+.empty-state .ei { font-size: 48px; margin-bottom: 1rem; }
+
+@media print {
+  nav, .action-row, footer { display: none !important; }
+  body { background: white; }
+  .content-wrap { padding: 0; }
+  .print-preview { border: none; padding: 0; max-width: 100%; }
+  .page-header { display: none; }
+}
+</style>
+</head>
+<body>
+<nav>
+  <a href="index.html" class="logo"><span class="logo-dot"></span>NutriPlan</a>
+  <div class="nav-links" id="nav-links"></div>
+</nav>
+
+<div class="page-header">
+  <div>
+    <h1>🖨 Print Plan</h1>
+    <p>A print-ready version of your current meal plan.</p>
+  </div>
+</div>
+
+<div class="content-wrap">
+  <div id="action-row-wrap"></div>
+  <div id="print-wrap">
+    <div class="empty-state">
+      <div class="ei">🖨</div>
+      <p>No meal plan to print. Generate a plan first.</p>
+      <a href="index.html" class="btn btn-primary">← Build a meal plan</a>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 NutriPlan &nbsp;·&nbsp; Nutritional values are estimates.</footer>
+
+<script src="data.js"></script>
+<script>
+  renderNav('print.html');
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = loadPlan();
+    if (!saved || !saved.meals) return;
+
+    const { meals, meta } = saved;
+    const tCal = meals.reduce((s,m) => s + m.calories, 0);
+    const tC   = meals.reduce((s,m) => s + m.carbs, 0);
+    const tP   = meals.reduce((s,m) => s + m.protein, 0);
+    const tF   = meals.reduce((s,m) => s + m.fat, 0);
+    const date = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+    document.getElementById('action-row-wrap').innerHTML = `
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+        <a href="index.html" class="btn btn-outline">← Back to planner</a>
+      </div>`;
+
+    const mealRows = meals.map((m, i) => `
+      <div class="print-meal">
+        <div class="pm-num">${i+1}</div>
+        <div class="pm-body">
+          <div class="pm-type">${m.type}</div>
+          <div class="pm-name">${m.name}</div>
+          <div class="pm-desc">${m.desc}</div>
+          <div class="pm-macros">
+            <div class="pm-macro">Carbs: <span>${m.carbs}g</span></div>
+            <div class="pm-macro">Protein: <span>${m.protein}g</span></div>
+            <div class="pm-macro">Fat: <span>${m.fat}g</span></div>
+          </div>
+          ${m.ingredients && m.ingredients.length ? `<div style="font-size:12px;color:var(--text-faint);margin-top:5px">Ingredients: ${m.ingredients.join(', ')}</div>` : ''}
+        </div>
+        <div class="pm-cal-col">
+          <div class="pm-cal">${m.calories}</div>
+          <div class="pm-cal-lbl">kcal</div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('print-wrap').innerHTML = `
+      <div class="print-preview" id="print-area">
+        <div class="print-header">
+          <div class="print-logo"><span style="color:var(--green)">●</span> NutriPlan</div>
+          <div class="print-date">${date}</div>
+        </div>
+        <div class="print-title">Daily Meal Plan</div>
+        <div class="print-subtitle">Diet: ${meta?.diet || 'Balanced'} &nbsp;·&nbsp; Target: ${meta?.calories || tCal} kcal &nbsp;·&nbsp; ${meals.length} meals</div>
+        <div class="print-summary">
+          <div><div class="ps-val">${tCal}</div><div class="ps-lbl">Calories</div></div>
+          <div><div class="ps-val" style="color:var(--blue)">${tC}g</div><div class="ps-lbl">Carbs</div></div>
+          <div><div class="ps-val" style="color:var(--green)">${tP}g</div><div class="ps-lbl">Protein</div></div>
+          <div><div class="ps-val" style="color:var(--amber)">${tF}g</div><div class="ps-lbl">Fat</div></div>
+        </div>
+        <div>${mealRows}</div>
+        <div class="print-footer-note">Generated by NutriPlan · nutriplan.app · Nutritional values are estimates. Always consult a registered dietitian for personalised advice.</div>
+      </div>`;
+  });
+</script>
+</body>
+</html>
