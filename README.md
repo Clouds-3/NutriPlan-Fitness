@@ -19,14 +19,6 @@
 
 ---
 
-## 📸 Preview
-
-| Meal Planner | Calorie Calculator | Grocery List |
-|---|---|---|
-| ![Meal Planner](https://placehold.co/280x160/1D9E75/white?text=Meal+Planner) | ![Calorie Calc](https://placehold.co/280x160/378ADD/white?text=Calorie+Calc) | ![Grocery](https://placehold.co/280x160/EF9F27/white?text=Grocery+List) |
-
----
-
 ## 🚀 Getting Started
 
 No installation needed. Just open `index.html` in your browser.
